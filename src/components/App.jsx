@@ -9,10 +9,10 @@ const App = (props) => (
     <Topbar
       href={'https://github.com/marcosfede/simon-game'}
       title={'Simon Game'}
-        />
+    />
     <Game
       {...props}
-        />
+    />
   </div>
 )
 
