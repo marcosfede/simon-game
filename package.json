@@ -1,8 +1,8 @@
 {
   "name": "simon-game",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "private": true,
-  "homepage": "http://marcosfede.github.io/simong-game",
+  "homepage": "http://marcosfede.github.io/simon-game",
   "devDependencies": {
     "gh-pages": "^0.11.0",
     "imports-loader": "^0.6.5",
