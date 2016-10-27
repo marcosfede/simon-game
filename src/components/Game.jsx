@@ -5,7 +5,7 @@ import FlatButton from 'material-ui/FlatButton'
 import Controls from './Controls'
 import TileBlock from './Tileblock'
 
-const Game = ({fastMode, hardMode, startGame, tilePress,
+const Game = ({fastMode, hardMode, handleStartButton, tilePress,
     resetGame, toggleFastMode, toggleHardMode}) => (
   <div id='content'>
     <Card id='card' zDepth={2}>
@@ -24,7 +24,7 @@ const Game = ({fastMode, hardMode, startGame, tilePress,
       <CardActions>
         <FlatButton
           label={'Start'}
-          onClick={startGame} />
+          onClick={handleStartButton} />
         <FlatButton
           label='Reset'
           onClick={resetGame} />
