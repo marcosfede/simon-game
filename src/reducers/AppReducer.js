@@ -1,96 +1,157 @@
 import {createAction} from 'redux-actions'
+import audio1 from '../sounds/simonSound1.mp3'
+import audio2 from '../sounds/simonSound2.mp3'
+import audio3 from '../sounds/simonSound3.mp3'
+import audio4 from '../sounds/simonSound4.mp3'
+const sounds = [audio1, audio2, audio3, audio4]
 // ------------------------------------
 // Constants
 // ------------------------------------
 const NUMBER_OF_TILES = 4
-const HL_TIME = 1000
-const CLEAR_TIME = 200
 
 const RESET_GAME = 'RESET_GAME'
 const START_GAME = 'START_GAME'
 const TOGGLE_FAST_MODE = 'TOGGLE_FAST_MODE'
-const TOGGLE_HARD_MODE = 'TOGGLE_HARD_MODE'
+const TOGGLE_STRICT_MODE = 'TOGGLE_STRICT_MODE'
 const TILE_PRESS = 'TILE_PRESS'
 const ADD_TILE = 'ADD_TILE'
 const HIGHLIGHT_TILE = 'HIGHLIGHT_TILE'
 const READY_FOR_INPUT = 'READY_FOR_INPUT'
 const CLEAR_HIGHLIGHT = 'CLEAR_HIGHLIGHT'
+const UPDATE_USER_SEQUENCE = 'UPDATE_USER_SEQUENCE'
+const WRONG_MOVE = 'WRONG_MOVE'
 // ------------------------------------
 // Actions
 // ------------------------------------
 const resetGame = createAction(RESET_GAME)
 const startGame = createAction(START_GAME)
 const toggleFastMode = createAction(TOGGLE_FAST_MODE)
-const toggleHardMode = createAction(TOGGLE_HARD_MODE)
-const tilePress = createAction(TILE_PRESS, tile => tile)
+const toggleStrictMode = createAction(TOGGLE_STRICT_MODE)
 const addTile = createAction(ADD_TILE)
 const highlightTile = createAction(HIGHLIGHT_TILE, tile => tile)
-const readyForInput = createAction(READY_FOR_INPUT, bool => bool)
+const setReadyForInput = createAction(READY_FOR_INPUT, bool => bool)
 const clearHighlight = createAction(CLEAR_HIGHLIGHT)
+const updateUserSequence = createAction(UPDATE_USER_SEQUENCE, sequence => sequence)
+const wrongMove = createAction(WRONG_MOVE)
 // ------------------------------------
 // Thunk Actions
 // ------------------------------------
-const handleStartButton = () => (dispatch, getState) => {
-  let { playing } = getState()
-  if (!playing) {
-    dispatch(startGame())
-    dispatch(addTile())
+function handleStartButton () {
+  return (dispatch, getState) => {
+    let { playing } = getState()
+    if (!playing) {
+      dispatch(startGame())
+      dispatch(addTile())
+      dispatch(playSequence())
+    }
+  }
+}
+function playAgain () {
+  return (dispatch, getState) => {
     dispatch(playSequence())
   }
 }
-const playSequence = () => (dispatch, getState) => {
-  let { sequence } = getState()
-  let timeout = (time) => new Promise((resolve, reject) => {
-    return setTimeout(resolve, time)
-  })
-  sequence.reduce((prev, curr, index) => {
-    let tile = sequence[index]
-    return prev.then(() => dispatch(highlightTile(tile)))
-    .then(() => timeout(HL_TIME))
-    .then(() => dispatch(clearHighlight(tile)))
-    .then(() => timeout(CLEAR_TIME))
-  }, Promise.resolve())
-  .then(() => dispatch(readyForInput()))
-}
-
-/*  some other attempts to improve this async code. does not seem to work.
-    I should submit an issue to thunk to ask about this.
-const playSequence2 = () => (dispatch, getState) => {
-  let { sequence } = getState()
-  sequence.forEach(async (tile, index) => {
+function hightlightAndPlaySound (tile) {
+  return (dispatch, getState) => {
     dispatch(highlightTile(tile))
-    await setTimeout(() => console.log('done waiting', index), 1000)
-    dispatch(clearHighlight(tile))
-    await setTimeout(() => console.log('done waiting v2', index), 500)
-  })
-}
-const playSequence3 = () => async (dispatch, getState) => {
-  let { sequence } = getState()
-  for (let index = 0; index < sequence.length; index++) {
-    let tile = sequence[index]
-    dispatch(highlightTile(tile))
-    await setTimeout(() => console.log('done waiting', index), 1000)
-    dispatch(clearHighlight(tile))
-    await setTimeout(() => console.log('done waiting v2', index), 500)
+    playSound(tile)
   }
 }
-*/
-
+function playSequence () {
+  return async (dispatch, getState) => {
+    let { sequence } = getState()
+    for (let tile of sequence) {
+      await highlightAndThenClear(dispatch, getState, tile)
+    }
+    dispatch(setReadyForInput(true))
+  }
+}
+function tilePress (tile) {
+  return (dispatch, getState) => {
+    let { readyForInput, sequence, userSequence, strictMode } = getState()
+    if (readyForInput) {
+      highlightAndThenClear(dispatch, getState, tile)
+      dispatch(wrongMove(false))
+      let newUserSequence = [...userSequence, tile]
+      if (newUserSequence.length < sequence.length) {
+        if (arraysEqual(newUserSequence, sequence.slice(0, newUserSequence.length))) {
+          dispatch(updateUserSequence(newUserSequence))
+        } else { setWrongMove(dispatch, strictMode) }
+      } else {
+        if (arraysEqual(newUserSequence, sequence)) { correctMove(dispatch) }
+        else { setWrongMove(dispatch, strictMode) }
+      }
+    }
+  }
+}
+// ------------------------------------
+// Helper functions
+// ------------------------------------
+function playSound (tile) {
+  let audio = new Audio(sounds[tile])
+  audio.play()
+}
+async function highlightAndThenClear (dispatch, getState, tile) {
+  let {hlTime, clTime} = getState()
+  dispatch(hightlightAndPlaySound(tile))
+  await timeout(hlTime)
+  dispatch(clearHighlight(tile))
+  await timeout(clTime)
+}
+async function correctMove (dispatch) {
+  dispatch(updateUserSequence([]))
+  dispatch(setReadyForInput(false))
+  dispatch(addTile())
+  await timeout(700)
+  dispatch(playSequence())
+}
+async function setWrongMove (dispatch, strictMode) {
+  dispatch(wrongMove(true))
+  dispatch(setReadyForInput(false))
+  dispatch(updateUserSequence([]))
+  if (strictMode) {
+    dispatch(resetGame())
+    dispatch(addTile())
+  }
+  await timeout(700)
+  dispatch(playSequence())
+}
+function timeout (time) {
+  return new Promise((resolve, reject) => {
+    return setTimeout(resolve, time)
+  })
+}
+function arraysEqual (a, b) {
+  if (a === b) return true
+  if (a == null || b == null) return false
+  if (a.length !== b.length) return false
+  for (var i = 0; i < a.length; ++i) {
+    if (a[i] !== b[i]) return false
+  }
+  return true
+}
+// ------------------------------------
 // Export external actions
+// ------------------------------------
 export const actions = {
   resetGame,
   toggleFastMode,
-  toggleHardMode,
+  toggleStrictMode,
   tilePress,
-  handleStartButton
+  handleStartButton,
+  playAgain
 }
 const INITIAL_STATE = {
   playing: false,
-  fastMode: true,
-  hardMode: false,
-  sequence: [0, 1, 2, 3],
+  fastMode: false,
+  strictMode: false,
+  sequence: [],
+  userSequence: [],
   readyForInput: false,
-  highlighted: null
+  highlightedTile: null,
+  wrongMove: false,
+  hlTime: 500,
+  clTime: 100
 }
 // ------------------------------------
 // Action Handlers
@@ -102,16 +163,25 @@ const ACTION_HANDLERS = {
     playing: true
   }),
 
-  [RESET_GAME]: (state) => INITIAL_STATE,
-
-  [TOGGLE_FAST_MODE]: (state) => ({
-    ...state,
-    fastMode: !state.fastMode
+  [RESET_GAME]: (state) => ({
+    ...INITIAL_STATE,
+    fastMode: state.fastMode,
+    strictMode: state.strictMode
   }),
 
-  [TOGGLE_HARD_MODE]: (state) => ({
+  [TOGGLE_FAST_MODE]: (state) => {
+    let {fastMode} = state
+    return ({
+      ...state,
+      fastMode: !fastMode,
+      hlTime: fastMode ? 500 : 150,
+      clTime: fastMode ? 200 : 50
+    })
+  },
+
+  [TOGGLE_STRICT_MODE]: (state) => ({
     ...state,
-    hardMode: !state.hardMode
+    strictMode: !state.strictMode
   }),
 
   [TILE_PRESS]: (state, action) => ({
@@ -125,17 +195,32 @@ const ACTION_HANDLERS = {
 
   [READY_FOR_INPUT]: (state, action) => ({
     ...state,
-    readyForInput: action
+    readyForInput: action.payload
   }),
 
   [CLEAR_HIGHLIGHT]: (state) => ({
     ...state,
-    highlighted: null
+    highlightedTile: null
   }),
 
-  [HIGHLIGHT_TILE]: (state, tile) => ({
+  [HIGHLIGHT_TILE]: (state, action) => ({
     ...state,
-    highlighted: tile
+    highlightedTile: action.payload
+  }),
+
+  [UPDATE_USER_SEQUENCE]: (state, action) => ({
+    ...state,
+    userSequence: action.payload
+  }),
+
+  [READY_FOR_INPUT]: (state, action) => ({
+    ...state,
+    readyForInput: action.payload
+  }),
+
+  [WRONG_MOVE]: (state, action) => ({
+    ...state,
+    wrongMove: action.payload
   })
 }
 // ------------------------------------
@@ -143,7 +228,6 @@ const ACTION_HANDLERS = {
 // ------------------------------------
 
 export default function mainReducer (state = INITIAL_STATE, action) {
-  console.log(state, action)
   const handler = ACTION_HANDLERS[action.type]
   return handler ? handler(state, action) : state
 }

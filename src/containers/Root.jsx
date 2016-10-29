@@ -5,8 +5,7 @@ import App from '../components/App'
 
 const mapStateToProps = (state) => {
   return ({
-    fastMode: state.fastMode,
-    hardMode: state.hardMode
+    ...state
   })
 }
 
