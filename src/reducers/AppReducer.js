@@ -8,6 +8,7 @@ const sounds = [audio1, audio2, audio3, audio4]
 // Constants
 // ------------------------------------
 const NUMBER_OF_TILES = 4
+const WIN_MOVES = 20
 
 const RESET_GAME = 'RESET_GAME'
 const START_GAME = 'START_GAME'
@@ -78,7 +79,7 @@ function tilePress (tile) {
           dispatch(updateUserSequence(newUserSequence))
         } else { setWrongMove(dispatch, strictMode) }
       } else {
-        if (arraysEqual(newUserSequence, sequence)) { correctMove(dispatch) }
+        if (arraysEqual(newUserSequence, sequence)) { correctMove(dispatch, getState) }
         else { setWrongMove(dispatch, strictMode) }
       }
     }
@@ -98,12 +99,20 @@ async function highlightAndThenClear (dispatch, getState, tile) {
   dispatch(clearHighlight(tile))
   await timeout(clTime)
 }
-async function correctMove (dispatch) {
+async function correctMove (dispatch, getState) {
+  let {sequence} = getState()
   dispatch(updateUserSequence([]))
-  dispatch(setReadyForInput(false))
-  dispatch(addTile())
-  await timeout(700)
-  dispatch(playSequence())
+  if (sequence.length !== WIN_MOVES) {
+    dispatch(setReadyForInput(false))
+    dispatch(addTile())
+    await timeout(700)
+    dispatch(playSequence())
+  } else {
+    wonGame()
+  }
+}
+function wonGame () {
+  
 }
 async function setWrongMove (dispatch, strictMode) {
   dispatch(wrongMove(true))

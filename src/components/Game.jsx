@@ -4,15 +4,32 @@ import FlatButton from 'material-ui/FlatButton'
 
 import Controls from './Controls'
 import TileBlock from './Tileblock'
+import Indicator from './Indicator'
+
+const sty = {
+  header : {
+    display: 'flex',
+    flexDirection: 'row',
+    justifyContent: 'space-between'
+  },
+  title: {
+    margin: '0',
+    display: 'flex',
+    flexDirection: 'row',
+    alignItems: 'center',
+    fontSize: '1.1em'
+  }
+}
 
 const Game = ({
-  fastMode, strictMode, handleStartButton, tilePress, resetGame,
+  fastMode, strictMode, handleStartButton, tilePress, resetGame, sequence,
    toggleFastMode, toggleStrictMode, highlightedTile, wrongMove, playAgain
 }) => (
   <div id='content'>
     <Card id='card' zDepth={2}>
-      <CardText>
-        Simon Game {wrongMove && 'Wrong'}
+      <CardText style={sty.header}>
+        <p style={sty.title}>Simon Game </p>
+        <Indicator wrongMove={wrongMove} sequenceLenght={sequence.length} />
       </CardText>
       <TileBlock
         tilePress={tilePress}
