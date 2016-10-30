@@ -21,8 +21,9 @@ const READY_FOR_INPUT = 'READY_FOR_INPUT'
 const CLEAR_HIGHLIGHT = 'CLEAR_HIGHLIGHT'
 const UPDATE_USER_SEQUENCE = 'UPDATE_USER_SEQUENCE'
 const WRONG_MOVE = 'WRONG_MOVE'
+const OPEN_POPUP = 'OPEN_POPUP'
 // ------------------------------------
-// Actions
+// Atomic dispatch actions
 // ------------------------------------
 const resetGame = createAction(RESET_GAME)
 const startGame = createAction(START_GAME)
@@ -34,9 +35,27 @@ const setReadyForInput = createAction(READY_FOR_INPUT, bool => bool)
 const clearHighlight = createAction(CLEAR_HIGHLIGHT)
 const updateUserSequence = createAction(UPDATE_USER_SEQUENCE, sequence => sequence)
 const wrongMove = createAction(WRONG_MOVE)
+const openPopup = createAction(OPEN_POPUP, bool => bool)
 // ------------------------------------
-// Thunk Actions
+// Thunk Actions to be exported
 // ------------------------------------
+function continuePlaying () {
+  return async (dispatch, getState) => {
+    dispatch(openPopup(false))
+    dispatch(setReadyForInput(false))
+    dispatch(addTile())
+    await timeout(700)
+    dispatch(playSequence())
+  }
+}
+function resetAndStart () {
+  return (dispatch, getState) => {
+    dispatch(resetGame())
+    dispatch(startGame())
+    dispatch(addTile())
+    dispatch(playSequence())
+  }
+}
 function handleStartButton () {
   return (dispatch, getState) => {
     let { playing } = getState()
@@ -47,17 +66,8 @@ function handleStartButton () {
     }
   }
 }
-function playAgain () {
-  return (dispatch, getState) => {
-    dispatch(playSequence())
-  }
-}
-function hightlightAndPlaySound (tile) {
-  return (dispatch, getState) => {
-    dispatch(highlightTile(tile))
-    playSound(tile)
-  }
-}
+
+
 function playSequence () {
   return async (dispatch, getState) => {
     let { sequence } = getState()
@@ -86,7 +96,7 @@ function tilePress (tile) {
   }
 }
 // ------------------------------------
-// Helper functions
+// Helper internal functions
 // ------------------------------------
 function playSound (tile) {
   let audio = new Audio(sounds[tile])
@@ -94,7 +104,8 @@ function playSound (tile) {
 }
 async function highlightAndThenClear (dispatch, getState, tile) {
   let {hlTime, clTime} = getState()
-  dispatch(hightlightAndPlaySound(tile))
+  dispatch(highlightTile(tile))
+  playSound(tile)
   await timeout(hlTime)
   dispatch(clearHighlight(tile))
   await timeout(clTime)
@@ -108,12 +119,10 @@ async function correctMove (dispatch, getState) {
     await timeout(700)
     dispatch(playSequence())
   } else {
-    wonGame()
+    dispatch(openPopup(true))
   }
 }
-function wonGame () {
-  
-}
+
 async function setWrongMove (dispatch, strictMode) {
   dispatch(wrongMove(true))
   dispatch(setReadyForInput(false))
@@ -126,7 +135,7 @@ async function setWrongMove (dispatch, strictMode) {
   dispatch(playSequence())
 }
 function timeout (time) {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     return setTimeout(resolve, time)
   })
 }
@@ -143,12 +152,13 @@ function arraysEqual (a, b) {
 // Export external actions
 // ------------------------------------
 export const actions = {
-  resetGame,
   toggleFastMode,
   toggleStrictMode,
   tilePress,
   handleStartButton,
-  playAgain
+  playSequence,
+  continuePlaying,
+  resetAndStart
 }
 const INITIAL_STATE = {
   playing: false,
@@ -160,7 +170,8 @@ const INITIAL_STATE = {
   highlightedTile: null,
   wrongMove: false,
   hlTime: 500,
-  clTime: 100
+  clTime: 100,
+  popupOpen: false
 }
 // ------------------------------------
 // Action Handlers
@@ -230,6 +241,11 @@ const ACTION_HANDLERS = {
   [WRONG_MOVE]: (state, action) => ({
     ...state,
     wrongMove: action.payload
+  }),
+
+  [OPEN_POPUP]: (state, action) => ({
+    ...state,
+    popupOpen: action.payload
   })
 }
 // ------------------------------------

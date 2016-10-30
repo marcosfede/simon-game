@@ -3,6 +3,7 @@ import React from 'react'
 import './App.css'
 import Topbar from './Topbar'
 import Game from './Game'
+import Popup from './Popup'
 
 const App = (props) => (
   <div id='App' className='App'>
@@ -13,6 +14,9 @@ const App = (props) => (
     <Game
       {...props}
     />
+  <Popup
+    {...props}
+  />
   </div>
 )
 

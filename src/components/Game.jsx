@@ -22,8 +22,8 @@ const sty = {
 }
 
 const Game = ({
-  fastMode, strictMode, handleStartButton, tilePress, resetGame, sequence,
-   toggleFastMode, toggleStrictMode, highlightedTile, wrongMove, playAgain
+  fastMode, strictMode, handleStartButton, tilePress, resetAndStart, sequence,
+   toggleFastMode, toggleStrictMode, highlightedTile, wrongMove, playSequence
 }) => (
   <div id='content'>
     <Card id='card' zDepth={2}>
@@ -52,10 +52,10 @@ const Game = ({
             onClick={handleStartButton} />
           <FlatButton
             label='Reset'
-            onClick={resetGame} />
+            onClick={resetAndStart} />
           <FlatButton
             label='Repeat'
-            onClick={playAgain} />
+            onClick={playSequence} />
         </div>
       </CardActions>
     </Card>
